@@ -1,7 +1,8 @@
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
-import { CreateMaterialDto, SubmitJobDto } from './dto';
+import { AppendBatchDto, CreateMaterialDto, CreateTrackDto, SubmitJobDto } from './dto';
 import { MaterialService } from '../material/material.service';
 import { JobService } from '../job/job.service';
+import { TrackService } from '../track/track.service';
 
 @Controller('materials')
 export class MaterialController {
@@ -51,5 +52,50 @@ export class JobController {
   @Get()
   async byMaterial(@Query('materialName') materialName: string) {
     return this.jobService.findByMaterial(materialName);
+  }
+}
+
+/**
+ * 长期服役监测的「跟踪通道」：开通道后按客户端序号分批追加
+ * (time, strain, temperature) 采样，服务记住整段加载史并增量推进。
+ */
+@Controller('tracks')
+export class TrackController {
+  constructor(private readonly trackService: TrackService) {}
+
+  /** 开通道：指定已有材料档，从静止状态起步，可选初始应变瞬时施加。 */
+  @Post()
+  async create(@Body() dto: CreateTrackDto) {
+    return this.trackService.createChannel({
+      materialName: dto.materialName,
+      initialStrain: dto.initialStrain,
+    });
+  }
+
+  /** 追加一批采样（时间紧接上一批末尾），返回逐点应力与平移因子。 */
+  @Post(':id/batches')
+  async append(@Param('id') id: string, @Body() dto: AppendBatchDto) {
+    return this.trackService.appendBatch(id, {
+      sequence: dto.sequence,
+      samples: dto.samples,
+    });
+  }
+
+  /** 查通道当前状态（时刻/应变/温度/支路内变量/最后序号）。 */
+  @Get(':id')
+  async status(@Param('id') id: string) {
+    return this.trackService.getChannel(id);
+  }
+
+  /** 已处理批次列表（按序号升序）。 */
+  @Get(':id/batches')
+  async batches(@Param('id') id: string) {
+    return this.trackService.listBatches(id);
+  }
+
+  /** 取某一已处理批次的完整逐点结果（重放查询）。 */
+  @Get(':id/batches/:sequence')
+  async batch(@Param('id') id: string, @Param('sequence') sequence: string) {
+    return this.trackService.getBatch(id, Number(sequence));
   }
 }

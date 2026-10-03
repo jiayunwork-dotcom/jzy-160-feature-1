@@ -4,6 +4,7 @@ import {
   IsArray,
   IsDefined,
   IsIn,
+  IsInt,
   IsNumber,
   IsOptional,
   IsString,
@@ -194,6 +195,40 @@ export class SubmitJobDto {
   @ValidateNested({ each: true })
   @Type(() => HistorySpecDto)
   histories!: HistorySpecDto[];
+}
+
+// ===== 跟踪通道 =====
+
+export class CreateTrackDto {
+  @IsString()
+  materialName!: string;
+
+  @IsOptional()
+  @IsFiniteNumber()
+  initialStrain?: number;
+}
+
+export class TrackSampleDto {
+  @IsFiniteNumber()
+  time!: number;
+
+  @IsFiniteNumber()
+  strain!: number;
+
+  @IsFiniteNumber()
+  temperature!: number;
+}
+
+export class AppendBatchDto {
+  @IsInt()
+  @Min(0)
+  sequence!: number;
+
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @Type(() => TrackSampleDto)
+  samples!: TrackSampleDto[];
 }
 
 // 保留 LinearSegmentDto / SineSegmentDto 的导出以免未使用告警（文档参考用）

@@ -117,7 +117,7 @@ export function runPronyKernel(input: KernelInput): KernelResult {
 }
 
 /** 分段线性段一步精确积分：ε̇=r 为常数，z' = f z + r τ (1−f)。 */
-function linearAdvance(
+export function linearAdvance(
   z: number[],
   eps0: number,
   eps1: number,
