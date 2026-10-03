@@ -196,5 +196,47 @@ export class SubmitJobDto {
   histories!: HistorySpecDto[];
 }
 
+// ---- 跟踪通道 ----
+
+export class CreateChannelDto {
+  @IsString()
+  materialName!: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
+  @IsFiniteNumber()
+  initialStrain?: number;
+
+  @IsOptional()
+  @IsFiniteNumber()
+  initialTemperature?: number;
+}
+
+export class ChannelSampleDto {
+  @IsFiniteNumber()
+  time!: number;
+
+  @IsFiniteNumber()
+  strain!: number;
+
+  @IsFiniteNumber()
+  temperature!: number;
+}
+
+export class AppendBatchDto {
+  @IsNumber()
+  @Min(1)
+  seq!: number;
+
+  // 非空校验由服务层给出领域错误码 CHANNEL_BATCH_EMPTY（DTO 只保证是数组）
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ChannelSampleDto)
+  samples!: ChannelSampleDto[];
+}
+
 // 保留 LinearSegmentDto / SineSegmentDto 的导出以免未使用告警（文档参考用）
 export type { LinearSegmentDto, SineSegmentDto };

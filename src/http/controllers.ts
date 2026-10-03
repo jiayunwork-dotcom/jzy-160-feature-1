@@ -1,7 +1,13 @@
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
-import { CreateMaterialDto, SubmitJobDto } from './dto';
+import {
+  AppendBatchDto,
+  CreateChannelDto,
+  CreateMaterialDto,
+  SubmitJobDto,
+} from './dto';
 import { MaterialService } from '../material/material.service';
 import { JobService } from '../job/job.service';
+import { ChannelService } from '../channel/channel.service';
 
 @Controller('materials')
 export class MaterialController {
@@ -51,5 +57,42 @@ export class JobController {
   @Get()
   async byMaterial(@Query('materialName') materialName: string) {
     return this.jobService.findByMaterial(materialName);
+  }
+}
+
+@Controller('channels')
+export class ChannelController {
+  constructor(private readonly channelService: ChannelService) {}
+
+  /** 开跟踪通道：指定已有材料档，静止起步（可给 t=0 瞬时施加的初始应变/初始温度）。 */
+  @Post()
+  async create(@Body() dto: CreateChannelDto) {
+    return this.channelService.create(dto);
+  }
+
+  /** 追加一批采样（客户端连续序号），返回本批每点应力与平移因子并推进通道。 */
+  @Post(':id/batches')
+  async append(@Param('id') id: string, @Body() dto: AppendBatchDto) {
+    return this.channelService.append(id, dto);
+  }
+
+  /** 通道当前状态（当前时刻、末尾应变/温度、约化时间、下一个序号等）。 */
+  @Get(':id')
+  async get(@Param('id') id: string) {
+    return this.channelService.getState(id);
+  }
+
+  /** 已处理批次列表（序号、点数、起止时间，不含曲线数组）。 */
+  @Get(':id/batches')
+  async batches(@Param('id') id: string) {
+    return this.channelService.listBatches(id);
+  }
+
+  /** 取某一已处理批次的完整内容与结果（重发对账用）。 */
+  @Get(':id/batches/:seq')
+  async batch(@Param('id') id: string, @Param('seq') seq: string) {
+    const seqNum = Number(seq);
+    // 非法序号交给服务层统一抛 CHANNEL_BATCH_NOT_FOUND
+    return this.channelService.getBatch(id, seqNum);
   }
 }
